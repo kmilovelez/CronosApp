@@ -1,7 +1,9 @@
 const path = require('path');
+const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const Dotenv = require('dotenv-webpack');
+const packageJson = require('./package.json');
 
 module.exports = (env, argv) => {
     const isProd = argv.mode === 'production';
@@ -32,6 +34,9 @@ module.exports = (env, argv) => {
         ],
     },
     plugins: [
+        new webpack.DefinePlugin({
+            'process.env.APP_VERSION': JSON.stringify(packageJson.version),
+        }),
         new Dotenv({ systemvars: true }),
         new HtmlWebpackPlugin({
             template: './src/index.html',

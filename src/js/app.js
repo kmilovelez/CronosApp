@@ -409,7 +409,7 @@ const App = () => {
                 </main>
 
                 <footer className="app-footer">
-                    <p>CronosApp v2.0</p>
+                    <p>CronosApp v{process.env.APP_VERSION}</p>
                     <p className="footer-note">
                         {connectionMode === 'online' ? 'Conectado a Supabase' : 'Modo offline (IndexedDB)'}
                         {session ? ' · ' + session.user.email : ''}
