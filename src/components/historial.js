@@ -1,12 +1,88 @@
 // historial.js — Historial de marcaciones y detección de patrones
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { STATUS_LABELS, TIPO_ACTIVIDAD_LABELS } from '../utils/helpers.js';
 import { getTimeEntries, getEmployees } from '../js/db.js';
+
+// Fix Leaflet default marker icons
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
+const markerIcon = new L.Icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
+});
+
+/* ─── Mini mapa modal ─── */
+const GPSMapModal = ({ gps, tipoMarcacion, date, onClose }) => {
+    const mapRef = useRef(null);
+    const mapInstanceRef = useRef(null);
+
+    useEffect(() => {
+        if (!gps || !gps.lat || !gps.lng || !mapRef.current) return;
+        if (!mapInstanceRef.current) {
+            mapInstanceRef.current = L.map(mapRef.current, {
+                zoomControl: true,
+                scrollWheelZoom: true,
+            }).setView([gps.lat, gps.lng], 16);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap',
+                maxZoom: 19,
+            }).addTo(mapInstanceRef.current);
+        }
+        L.marker([gps.lat, gps.lng], { icon: markerIcon })
+            .addTo(mapInstanceRef.current)
+            .bindPopup(`<strong>${tipoMarcacion === 'entrada' ? '🟢 Entrada' : '🔴 Salida'}</strong><br/>${date}<br/><small>${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}</small>`)
+            .openPopup();
+        setTimeout(() => mapInstanceRef.current?.invalidateSize(), 200);
+        return () => {};
+    }, [gps]);
+
+    useEffect(() => {
+        return () => {
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.remove();
+                mapInstanceRef.current = null;
+            }
+        };
+    }, []);
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-content gps-modal" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                    <h3>📍 Ubicación — {date}</h3>
+                    <button className="btn btn-sm btn-outline" onClick={onClose}>✕</button>
+                </div>
+                <div ref={mapRef} style={{ height: 350, width: '100%', borderRadius: 8 }} />
+                <div className="gps-coords">
+                    <small>{gps.lat.toFixed(6)}, {gps.lng.toFixed(6)}</small>
+                    <a
+                        href={`https://www.google.com/maps?q=${gps.lat},${gps.lng}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-sm btn-outline"
+                        style={{ marginLeft: 8 }}
+                    >
+                        Abrir en Google Maps ↗
+                    </a>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const Historial = ({ currentEmployee, rol }) => {
     const [entries, setEntries] = useState([]);
     const [employees, setEmployees] = useState([]);
     const [filtroEmpleado, setFiltroEmpleado] = useState('');
+    const [selectedGps, setSelectedGps] = useState(null);
     const isTecnico = rol === 'tecnico';
 
     useEffect(() => {
@@ -178,7 +254,15 @@ const Historial = ({ currentEmployee, rol }) => {
                                                 {STATUS_LABELS[m.status] || m.status}
                                             </span>
                                         </td>
-                                        <td>{m.gps ? '📍' : '❌'}</td>
+                                        <td>
+                                            {m.gps && m.gps.lat ? (
+                                                <button
+                                                    className="btn-icon"
+                                                    title="Ver ubicación en mapa"
+                                                    onClick={() => setSelectedGps({ gps: m.gps, tipoMarcacion: m.tipoMarcacion, date: m.date })}
+                                                >📍</button>
+                                            ) : '❌'}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -226,13 +310,31 @@ const Historial = ({ currentEmployee, rol }) => {
                                                 {STATUS_LABELS[m.status] || m.status}
                                             </span>
                                         </td>
-                                        <td>{m.gps ? '📍' : '❌'}</td>
+                                        <td>
+                                            {m.gps && m.gps.lat ? (
+                                                <button
+                                                    className="btn-icon"
+                                                    title="Ver ubicación en mapa"
+                                                    onClick={() => setSelectedGps({ gps: m.gps, tipoMarcacion: m.tipoMarcacion, date: m.date })}
+                                                >📍</button>
+                                            ) : '❌'}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
                 </div>
+            )}
+
+            {/* Modal del mapa GPS */}
+            {selectedGps && (
+                <GPSMapModal
+                    gps={selectedGps.gps}
+                    tipoMarcacion={selectedGps.tipoMarcacion}
+                    date={selectedGps.date}
+                    onClose={() => setSelectedGps(null)}
+                />
             )}
         </div>
     );
