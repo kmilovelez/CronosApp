@@ -56,7 +56,7 @@ const TABS = [
     { id: 'novedades', label: 'Novedades', icon: '\u{1F4CB}', component: NovedadesForm, role: 'tecnico' },
     { id: 'supervisor', label: 'Aprobar', icon: '\u{1F50D}', component: SupervisorPanel, role: 'supervisor' },
     { id: 'nomina', label: 'Nomina', icon: '\u{1F4CA}', component: ReporteNomina, role: 'supervisor' },
-    { id: 'historial', label: 'Historial', icon: '\u{1F4C8}', component: Historial, role: 'supervisor' },
+    { id: 'historial', label: 'Historial', icon: '\u{1F4C8}', component: Historial, role: 'tecnico' },
     { id: 'admin', label: 'Admin', icon: '\u2699\uFE0F', component: BackOffice, role: 'admin' },
 ];
 
@@ -301,7 +301,7 @@ const App = () => {
                 </header>
 
                 <main className="app-main" key={refreshKey}>
-                    {ActiveComponent && <ActiveComponent onSuccess={handleSuccess} currentEmployee={currentEmployee} />}
+                    {ActiveComponent && <ActiveComponent onSuccess={handleSuccess} currentEmployee={currentEmployee} rol={rol} />}
                 </main>
 
                 <footer className="app-footer">

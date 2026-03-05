@@ -3,10 +3,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { STATUS_LABELS, TIPO_ACTIVIDAD_LABELS } from '../utils/helpers.js';
 import { getTimeEntries, getEmployees } from '../js/db.js';
 
-const Historial = () => {
+const Historial = ({ currentEmployee, rol }) => {
     const [entries, setEntries] = useState([]);
     const [employees, setEmployees] = useState([]);
     const [filtroEmpleado, setFiltroEmpleado] = useState('');
+    const isTecnico = rol === 'tecnico';
 
     useEffect(() => {
         loadData();
@@ -14,7 +15,12 @@ const Historial = () => {
 
     const loadData = async () => {
         const [ents, emps] = await Promise.all([getTimeEntries(), getEmployees()]);
-        setEntries(ents);
+        // Si es técnico, solo mostrar sus propias marcaciones
+        if (isTecnico && currentEmployee) {
+            setEntries(ents.filter(e => e.employeeId === currentEmployee.id));
+        } else {
+            setEntries(ents);
+        }
         setEmployees(emps);
     };
 
@@ -57,8 +63,12 @@ const Historial = () => {
 
     return (
         <div className="card">
-            <h2>📈 Historial y Patrones</h2>
-            <p className="card-subtitle">Análisis de marcaciones tardías y patrones por empleado</p>
+            <h2>📈 {isTecnico ? 'Mi Historial' : 'Historial y Patrones'}</h2>
+            <p className="card-subtitle">
+                {isTecnico
+                    ? 'Resumen de tus marcaciones'
+                    : 'Análisis de marcaciones tardías y patrones por empleado'}
+            </p>
 
             {/* Resumen general */}
             <div className="stats-grid">
@@ -80,7 +90,9 @@ const Historial = () => {
                 </div>
             </div>
 
-            {/* Tabla de empleados */}
+            {/* Tabla de empleados — solo supervisores y admin */}
+            {!isTecnico && (
+            <>
             <h3>Resumen por empleado</h3>
             {analisis.length === 0 ? (
                 <p className="empty-state">No hay datos para analizar.</p>
@@ -124,9 +136,60 @@ const Historial = () => {
                     </table>
                 </div>
             )}
+            </>
+            )}
 
-            {/* Detalle del empleado seleccionado */}
-            {empleadoSeleccionado && (
+            {/* Vista directa de marcaciones para técnicos */}
+            {isTecnico && (
+                <div className="detalle-empleado">
+                    <h3>Mis marcaciones</h3>
+                    {entries.length === 0 ? (
+                        <p className="empty-state">No tienes marcaciones registradas aún.</p>
+                    ) : (
+                    <div className="table-responsive">
+                        <table className="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Tipo</th>
+                                    <th>Hora</th>
+                                    <th>OT</th>
+                                    <th>Actividad</th>
+                                    <th>Tardía</th>
+                                    <th>Motivo</th>
+                                    <th>Estado</th>
+                                    <th>Ubicación</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {entries
+                                    .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+                                    .map((m) => (
+                                    <tr key={m.id} className={m.esTardia ? 'row-warning' : ''}>
+                                        <td>{m.date}</td>
+                                        <td>{m.tipoMarcacion === 'entrada' ? '🟢' : '🔴'} {m.tipoMarcacion}</td>
+                                        <td>{m.esTardia ? m.horaDeclared : m.horaLocal?.substring(0, 5)}</td>
+                                        <td>{m.projectCode}</td>
+                                        <td>{TIPO_ACTIVIDAD_LABELS[m.tipoActividad] || '—'}</td>
+                                        <td>{m.esTardia ? '⏰ Sí' : 'No'}</td>
+                                        <td>{m.motivoTardia || '—'}</td>
+                                        <td>
+                                            <span className={`badge badge-${m.status === 'aprobada' || m.status === 'registrada' ? 'success' : m.status === 'rechazada' ? 'error' : 'warning'}`}>
+                                                {STATUS_LABELS[m.status] || m.status}
+                                            </span>
+                                        </td>
+                                        <td>{m.gps ? '📍' : '❌'}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    )}
+                </div>
+            )}
+
+            {/* Detalle del empleado seleccionado — supervisores/admin */}
+            {!isTecnico && empleadoSeleccionado && (
                 <div className="detalle-empleado">
                     <h3>Detalle: {empleadoSeleccionado.nombre} ({empleadoSeleccionado.cedula})</h3>
                     <button className="btn btn-outline btn-sm" onClick={() => setFiltroEmpleado('')}>✕ Cerrar detalle</button>
