@@ -213,6 +213,42 @@ CREATE POLICY "att_update" ON public.attachments FOR UPDATE USING (true);
 CREATE POLICY "att_delete" ON public.attachments FOR DELETE USING (true);
 
 -- ── 9. DATOS SEMILLA ─────────────────────────────────────
+
+-- ── 9a. TABLA: user_presence (Presencia en tiempo real) ──
+CREATE TABLE IF NOT EXISTS public.user_presence (
+    id              BIGSERIAL PRIMARY KEY,
+    employee_id     BIGINT UNIQUE REFERENCES public.employees(id) ON DELETE CASCADE,
+    is_online       BOOLEAN DEFAULT FALSE,
+    last_seen       TIMESTAMPTZ DEFAULT NOW(),
+    gps_lat         NUMERIC(10,7),
+    gps_lng         NUMERIC(10,7),
+    gps_address     TEXT,
+    device_info     TEXT,
+    app_version     TEXT,
+    created_at      TIMESTAMPTZ DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_presence_employee ON public.user_presence(employee_id);
+CREATE INDEX IF NOT EXISTS idx_presence_online ON public.user_presence(is_online);
+
+DROP TRIGGER IF EXISTS set_updated_at_presence ON public.user_presence;
+CREATE TRIGGER set_updated_at_presence
+    BEFORE UPDATE ON public.user_presence
+    FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+-- RLS para user_presence
+ALTER TABLE public.user_presence ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "presence_select" ON public.user_presence;
+DROP POLICY IF EXISTS "presence_insert" ON public.user_presence;
+DROP POLICY IF EXISTS "presence_update" ON public.user_presence;
+DROP POLICY IF EXISTS "presence_delete" ON public.user_presence;
+CREATE POLICY "presence_select" ON public.user_presence FOR SELECT USING (true);
+CREATE POLICY "presence_insert" ON public.user_presence FOR INSERT WITH CHECK (true);
+CREATE POLICY "presence_update" ON public.user_presence FOR UPDATE USING (true);
+CREATE POLICY "presence_delete" ON public.user_presence FOR DELETE USING (true);
+
+-- ── 9b. DATOS SEMILLA ────────────────────────────────────
 INSERT INTO public.employees (cedula, nombre, cargo, pais, zona_horaria, rol) VALUES
     ('1001234567', 'Harold Pérez', 'Técnico', 'Colombia', 'America/Bogota', 'tecnico'),
     ('1009876543', 'Carlos Ruiz', 'Técnico', 'Colombia', 'America/Bogota', 'tecnico'),

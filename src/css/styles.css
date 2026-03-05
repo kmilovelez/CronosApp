@@ -471,6 +471,50 @@ select.input {
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
+/* ══ PRESENCE / UBICACIÓN ══════════════════════ */
+.presence-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+    flex-shrink: 0; margin-right: 4px;
+}
+.presence-dot.online { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.6); animation: pulse-online 2s infinite; }
+.presence-dot.offline { background: #6b7280; }
+.presence-dot.unknown { background: #374151; }
+
+@keyframes pulse-online {
+    0%, 100% { box-shadow: 0 0 4px rgba(34,197,94,0.4); }
+    50% { box-shadow: 0 0 10px rgba(34,197,94,0.8); }
+}
+
+.employee-name-cell { display: flex; align-items: center; gap: 6px; }
+
+.td-presence { min-width: 140px; }
+
+.presence-info { display: flex; flex-direction: column; gap: 2px; font-size: 0.8rem; }
+.presence-info .btn-icon { align-self: flex-start; font-size: 0.9rem; padding: 2px 4px; }
+
+.presence-status-text { font-weight: 600; }
+.text-online { color: #22c55e; }
+.text-offline { color: #6b7280; }
+
+.presence-last-seen { color: var(--text-muted); font-size: 0.72rem; }
+.presence-none { color: var(--text-muted); font-size: 0.75rem; font-style: italic; }
+
+.presence-map-info {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 8px 0; font-size: 0.85rem; color: var(--text-secondary);
+}
+.presence-map-info .presence-dot { width: 12px; height: 12px; }
+.presence-time { color: var(--text-muted); font-size: 0.78rem; }
+.presence-device { color: var(--text-muted); font-size: 0.75rem; }
+.presence-version { color: var(--accent); font-size: 0.72rem; font-weight: 600; }
+
+.gps-coords {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 8px; padding: 8px 12px; background: var(--bg-body);
+    border-radius: 6px; font-size: 0.82rem;
+}
+.gps-coords code { color: var(--text-secondary); }
+
 /* ══ RESPONSIVE ════════════════════════════════ */
 @media (max-width: 900px) { :root { --sidebar-width: 200px; } }
 

@@ -4,6 +4,7 @@ import '../css/styles.css';
 import { initDB, seedDemoData, isOnline } from './db.js';
 import { getSession, signOut, onAuthStateChange } from '../services/auth-service.js';
 import { upsertEmployeeFromAuth } from '../services/supabase-db.js';
+import { startPresence, stopPresence } from '../services/presence-service.js';
 import Login from '../components/login.js';
 import MarcacionForm from '../components/marcacion-form.js';
 import MarcacionTardia from '../components/marcacion-tardia.js';
@@ -149,6 +150,8 @@ const App = () => {
             if (emp) {
                 setCurrentEmployee(emp);
                 setRol(emp.rol || 'tecnico');
+                // Iniciar servicio de presencia con GPS
+                startPresence(emp.id);
                 return emp;
             }
         } catch (err) {
@@ -201,6 +204,7 @@ const App = () => {
 
     const handleLogout = async () => {
         try {
+            stopPresence();
             await signOut();
         } catch (e) {
             console.warn('Logout error:', e);

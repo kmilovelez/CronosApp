@@ -1,5 +1,6 @@
 // backoffice.js — Panel de administración (roles, empleados, proyectos)
 import React, { useState, useEffect, useCallback } from 'react';
+import L from 'leaflet';
 import {
     getAllEmployees,
     updateEmployeeRole,
@@ -12,6 +13,72 @@ import {
     reactivateProject,
     getDistinctCountries,
 } from '../services/supabase-db.js';
+import { getAllPresence, isReallyOnline, timeAgo } from '../services/presence-service.js';
+
+// Fix Leaflet default icon (webpack)
+delete L.Icon.Default.prototype._getIconUrl;
+const markerIcon = new L.Icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
+});
+
+// ── Modal de mapa GPS de presencia ───────────────────────
+const PresenceMapModal = ({ employee, presence, onClose }) => {
+    const mapRef = React.useRef(null);
+    const mapInstance = React.useRef(null);
+
+    React.useEffect(() => {
+        if (!mapRef.current || !presence?.gps_lat || !presence?.gps_lng) return;
+        const lat = Number(presence.gps_lat);
+        const lng = Number(presence.gps_lng);
+        const map = L.map(mapRef.current).setView([lat, lng], 16);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap',
+        }).addTo(map);
+        L.marker([lat, lng], { icon: markerIcon })
+            .addTo(map)
+            .bindPopup(`<strong>${employee.nombre}</strong><br>${timeAgo(presence.last_seen)}`)
+            .openPopup();
+        mapInstance.current = map;
+        return () => { map.remove(); };
+    }, [presence, employee]);
+
+    if (!presence?.gps_lat || !presence?.gps_lng) return null;
+    const lat = Number(presence.gps_lat);
+    const lng = Number(presence.gps_lng);
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-content gps-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                    <h3>📍 Ubicación de {employee.nombre}</h3>
+                    <button className="btn btn-xs btn-outline" onClick={onClose}>✖</button>
+                </div>
+                <div className="presence-map-info">
+                    <span className={`presence-dot ${isReallyOnline(presence) ? 'online' : 'offline'}`}></span>
+                    <span>{isReallyOnline(presence) ? 'En línea' : 'Desconectado'}</span>
+                    <span className="presence-time">{timeAgo(presence.last_seen)}</span>
+                    {presence.device_info && <span className="presence-device">📱 {presence.device_info}</span>}
+                    {presence.app_version && <span className="presence-version">v{presence.app_version}</span>}
+                </div>
+                <div ref={mapRef} style={{ height: 350, borderRadius: 8, marginTop: 8 }}></div>
+                <div className="gps-coords">
+                    <code>{lat.toFixed(6)}, {lng.toFixed(6)}</code>
+                    <a
+                        href={`https://www.google.com/maps?q=${lat},${lng}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-xs btn-outline"
+                    >
+                        🗺️ Google Maps
+                    </a>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const ROLES = [
     { value: 'tecnico', label: 'Técnico', color: '#2563eb' },
@@ -20,7 +87,7 @@ const ROLES = [
 ];
 
 // ── Sub-componente: fila de empleado editable ────────────
-const EmployeeRow = ({ emp, paises, onRoleChange, onFieldUpdate, onDeactivate }) => {
+const EmployeeRow = ({ emp, paises, presence, onRoleChange, onFieldUpdate, onDeactivate, onShowMap }) => {
     const [editing, setEditing] = useState(false);
     const [nombre, setNombre] = useState(emp.nombre || '');
     const [cargo, setCargo] = useState(emp.cargo || '');
@@ -42,15 +109,21 @@ const EmployeeRow = ({ emp, paises, onRoleChange, onFieldUpdate, onDeactivate })
     };
 
     const rolObj = ROLES.find((r) => r.value === emp.rol) || ROLES[0];
+    const online = isReallyOnline(presence);
+    const hasGps = presence?.gps_lat && presence?.gps_lng;
 
     return (
         <tr className={!emp.activo ? 'row-inactive' : ''}>
             <td>
-                {editing ? (
-                    <input className="input input-sm" value={nombre} onChange={(e) => setNombre(e.target.value)} />
-                ) : (
-                    <span>{emp.nombre}</span>
-                )}
+                <div className="employee-name-cell">
+                    <span className={`presence-dot ${online ? 'online' : presence ? 'offline' : 'unknown'}`}
+                          title={online ? 'En línea' : presence ? `Desconectado · ${timeAgo(presence.last_seen)}` : 'Sin datos'}></span>
+                    {editing ? (
+                        <input className="input input-sm" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+                    ) : (
+                        <span>{emp.nombre}</span>
+                    )}
+                </div>
             </td>
             <td className="td-mono">{emp.cedula}</td>
             <td className="td-email">{emp.email || '—'}</td>
@@ -86,6 +159,23 @@ const EmployeeRow = ({ emp, paises, onRoleChange, onFieldUpdate, onDeactivate })
                 <span className={`badge ${emp.activo ? 'badge-success' : 'badge-warning'}`}>
                     {emp.activo ? 'Activo' : 'Inactivo'}
                 </span>
+            </td>
+            <td className="td-presence">
+                {presence ? (
+                    <div className="presence-info">
+                        <span className={`presence-status-text ${online ? 'text-online' : 'text-offline'}`}>
+                            {online ? '🟢 En línea' : '⚫ Desconectado'}
+                        </span>
+                        <span className="presence-last-seen">{timeAgo(presence.last_seen)}</span>
+                        {hasGps && (
+                            <button className="btn btn-xs btn-icon" onClick={() => onShowMap(emp, presence)} title="Ver ubicación">
+                                📍
+                            </button>
+                        )}
+                    </div>
+                ) : (
+                    <span className="presence-none">Sin conexión registrada</span>
+                )}
             </td>
             <td className="td-actions">
                 {editing ? (
@@ -261,6 +351,8 @@ const BackOffice = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [projectSearch, setProjectSearch] = useState('');
     const [showInactiveProjects, setShowInactiveProjects] = useState(false);
+    const [presenceMap, setPresenceMap] = useState({}); // { employee_id: presenceRow }
+    const [selectedMapEmp, setSelectedMapEmp] = useState(null); // { emp, presence }
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -275,7 +367,30 @@ const BackOffice = () => {
         setLoading(false);
     }, []);
 
+    // Cargar presencia aparte (no bloquea loadData)
+    const loadPresence = useCallback(async () => {
+        try {
+            const rows = await getAllPresence();
+            const map = {};
+            for (const r of rows) {
+                map[r.employee_id] = r;
+            }
+            setPresenceMap(map);
+        } catch (err) {
+            console.warn('Error loading presence:', err.message);
+        }
+    }, []);
+
     useEffect(() => { loadData(); }, [loadData]);
+
+    // Auto-refresh presencia cada 30 segundos cuando la sección de empleados está activa
+    useEffect(() => {
+        loadPresence();
+        if (activeSection === 'employees') {
+            const timer = setInterval(loadPresence, 30000);
+            return () => clearInterval(timer);
+        }
+    }, [loadPresence, activeSection]);
 
     // ── Handlers ────────────────────────────
     const handleRoleChange = async (empId, newRole) => {
@@ -362,12 +477,16 @@ const BackOffice = () => {
 
     // ── Contadores resumen ──────────────────
     const totalActive = employees.filter((e) => e.activo).length;
+    const onlineNow = employees.filter((e) => e.activo && isReallyOnline(presenceMap[e.id])).length;
     const countByRole = ROLES.map((r) => ({
         ...r,
         count: employees.filter((e) => e.rol === r.value && e.activo).length,
     }));
     const activeProjects = projects.filter((p) => p.activo).length;
     const inactiveProjects = projects.length - activeProjects;
+
+    const handleShowMap = (emp, presence) => setSelectedMapEmp({ emp, presence });
+    const handleCloseMap = () => setSelectedMapEmp(null);
 
     if (loading) {
         return (
@@ -389,6 +508,10 @@ const BackOffice = () => {
                     <div className="bo-stat">
                         <span className="bo-stat-number">{totalActive}</span>
                         <span className="bo-stat-label">Empleados activos</span>
+                    </div>
+                    <div className="bo-stat">
+                        <span className="bo-stat-number" style={{ color: '#22c55e' }}>{onlineNow}</span>
+                        <span className="bo-stat-label">🟢 En línea ahora</span>
                     </div>
                     {countByRole.map((r) => (
                         <div className="bo-stat" key={r.value}>
@@ -436,7 +559,7 @@ const BackOffice = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                             style={{ maxWidth: 400 }}
                         />
-                        <button className="btn btn-outline" onClick={loadData}>🔄 Refrescar</button>
+                        <button className="btn btn-outline" onClick={() => { loadData(); loadPresence(); }}>🔄 Refrescar</button>
                     </div>
 
                     <div className="bo-table-wrapper">
@@ -450,21 +573,24 @@ const BackOffice = () => {
                                     <th>País</th>
                                     <th>Rol</th>
                                     <th>Estado</th>
+                                    <th>Presencia / Ubicación</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filteredEmployees.length === 0 ? (
-                                    <tr><td colSpan={8} className="td-empty">No se encontraron empleados</td></tr>
+                                    <tr><td colSpan={9} className="td-empty">No se encontraron empleados</td></tr>
                                 ) : (
                                     filteredEmployees.map((emp) => (
                                         <EmployeeRow
                                             key={emp.id}
                                             emp={emp}
                                             paises={paises}
+                                            presence={presenceMap[emp.id] || null}
                                             onRoleChange={handleRoleChange}
                                             onFieldUpdate={handleFieldUpdate}
                                             onDeactivate={handleDeactivate}
+                                            onShowMap={handleShowMap}
                                         />
                                     ))
                                 )}
@@ -538,6 +664,15 @@ const BackOffice = () => {
                         </span>
                     </div>
                 </div>
+            )}
+
+            {/* Modal de mapa de presencia */}
+            {selectedMapEmp && (
+                <PresenceMapModal
+                    employee={selectedMapEmp.emp}
+                    presence={selectedMapEmp.presence}
+                    onClose={handleCloseMap}
+                />
             )}
         </div>
     );
