@@ -120,18 +120,6 @@ const Login = ({ onLogin, onSkip }) => {
                         {loading ? '⏳ Procesando...' : mode === 'login' ? '🔐 Iniciar Sesión' : '📝 Crear Cuenta'}
                     </button>
                 </form>
-
-                <div className="login-divider">
-                    <span>o</span>
-                </div>
-
-                <button className="btn btn-secondary login-offline" onClick={onSkip}>
-                    💾 Usar sin conexión (modo offline)
-                </button>
-
-                <p className="login-footer-text">
-                    Modo offline usa IndexedDB local. Los datos no se sincronizan.
-                </p>
             </div>
         </div>
     );
