@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#19191d"/>
+      <stop offset="100%" stop-color="#2d2d35"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="72" height="72" rx="13" fill="url(#bg)"/>
+  <!-- Clock circle -->
+  <circle cx="36" cy="36" r="27" fill="none" stroke="#f02e65" stroke-width="3"/>
+  <!-- Hour hand -->
+  <line x1="36" y1="36" x2="36" y2="22.5" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+  <!-- Minute hand -->
+  <line x1="36" y1="36" x2="45.45" y2="26.55" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+  <!-- Center dot -->
+  <circle cx="36" cy="36" r="2" fill="#f02e65"/>
+  <!-- Hour marks -->
+    <line x1="36.0" y1="11.9" x2="36.0" y2="16.2" stroke="#8a8a9a" stroke-width="1" stroke-linecap="round"/>
+  <line x1="48.1" y1="15.1" x2="45.9" y2="18.9" stroke="#8a8a9a" stroke-width="1" stroke-linecap="round"/>
+  <line x1="56.9" y1="23.9" x2="53.1" y2="26.1" stroke="#8a8a9a" stroke-width="1" stroke-linecap="round"/>
+  <line x1="60.1" y1="36.0" x2="55.8" y2="36.0" stroke="#8a8a9a" stroke-width="1" stroke-linecap="round"/>
+  <line x1="56.9" y1="48.1" x2="53.1" y2="45.9" stroke="#8a8a9a" stroke-width="1" stroke-linecap="round"/>
+  <line x1="48.1" y1="56.9" x2="45.9" y2="53.1" stroke="#8a8a9a" stroke-width="1" stroke-linecap="round"/>
+  <line x1="36.0" y1="60.1" x2="36.0" y2="55.8" stroke="#8a8a9a" stroke-width="1" stroke-linecap="round"/>
+  <line x1="23.9" y1="56.9" x2="26.1" y2="53.1" stroke="#8a8a9a" stroke-width="1" stroke-linecap="round"/>
+  <line x1="15.1" y1="48.1" x2="18.9" y2="45.9" stroke="#8a8a9a" stroke-width="1" stroke-linecap="round"/>
+  <line x1="11.9" y1="36.0" x2="16.2" y2="36.0" stroke="#8a8a9a" stroke-width="1" stroke-linecap="round"/>
+  <line x1="15.1" y1="23.9" x2="18.9" y2="26.1" stroke="#8a8a9a" stroke-width="1" stroke-linecap="round"/>
+  <line x1="23.9" y1="15.1" x2="26.1" y2="18.9" stroke="#8a8a9a" stroke-width="1" stroke-linecap="round"/>
+  <!-- "C" letter -->
+  <text x="36" y="68.4" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-weight="700" font-size="9" fill="#f02e65" opacity="0.9">C</text>
+</svg>

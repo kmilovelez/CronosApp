@@ -310,6 +310,38 @@ select.input {
 .btn-logout { background: transparent; color: var(--danger); border: 1px solid rgba(239,68,68,0.3); padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; font-family: inherit; width: 100%; }
 .btn-logout:hover { background: var(--danger); color: white; }
 
+/* ── PWA Install Button ───────────────────────── */
+.btn-install-pwa {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 10px 14px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), #d42558);
+    color: white; border: none; font-family: inherit;
+    font-size: 0.85rem; font-weight: 600; cursor: pointer;
+    transition: all 0.2s ease; box-shadow: 0 2px 8px var(--accent-glow);
+}
+.btn-install-pwa:hover { transform: translateY(-1px); box-shadow: 0 4px 16px var(--accent-glow); }
+.btn-install-pwa:active { transform: translateY(0); }
+.btn-install-pwa .install-icon { font-size: 1.1rem; }
+.pwa-installed-badge {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 6px 12px; border-radius: 8px; font-size: 0.78rem;
+    color: var(--success); background: rgba(34,197,94,0.08);
+    border: 1px solid rgba(34,197,94,0.2);
+}
+/* ── iOS Install Guide ────────────────────────── */
+.ios-install-guide {
+    background: var(--bg-card); border: 1px solid var(--accent);
+    border-radius: 8px; padding: 10px 12px; font-size: 0.78rem;
+    color: var(--text-secondary); line-height: 1.5;
+}
+.ios-guide-header {
+    display: flex; align-items: center; justify-content: space-between;
+    font-weight: 600; color: var(--text-primary); margin-bottom: 6px; font-size: 0.82rem;
+}
+.ios-install-guide p { margin: 0; }
+.ios-install-guide strong { color: var(--accent); }
+.mobile-install-banner { display: none; } /* Solo visible en mobile via @media */
+
 /* ══ LOGIN PAGE ════════════════════════════════ */
 .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg-body); padding: 20px; position: relative; }
 .login-container::before { content: ''; position: absolute; top: 20%; left: 50%; transform: translateX(-50%); width: 500px; height: 500px; background: radial-gradient(circle, var(--accent-glow), transparent 70%); pointer-events: none; z-index: 0; }
@@ -457,6 +489,7 @@ select.input {
     .header-content h1 { font-size: 1.15rem; }
     .header-content .subtitle { font-size: 0.72rem; color: var(--text-muted); }
     .header-actions { display: flex; align-items: center; gap: 8px; }
+    .mobile-install-banner { padding: 8px 16px; display: block; }
     .app-body { padding-bottom: 72px; }
     .app-main { padding: 12px; }
     .card { padding: 16px; }

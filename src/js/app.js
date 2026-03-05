@@ -13,6 +13,61 @@ import ReporteNomina from '../components/reporte-nomina.js';
 import Historial from '../components/historial.js';
 import BackOffice from '../components/backoffice.js';
 
+// ── Hook PWA Install ─────────────────────────────────────
+const usePWAInstall = () => {
+    const [canInstall, setCanInstall] = useState(false);
+    const [isInstalled, setIsInstalled] = useState(false);
+    const [showIOSGuide, setShowIOSGuide] = useState(false);
+
+    useEffect(() => {
+        // Detectar si ya está instalada
+        const installed = window.matchMedia('(display-mode: standalone)').matches ||
+            window.navigator.standalone === true;
+        setIsInstalled(installed);
+
+        if (installed) return; // Ya instalada, no mostrar nada
+
+        // Detectar iOS Safari (no soporta beforeinstallprompt)
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+        if (isIOS && !installed) {
+            setShowIOSGuide(true);
+        }
+
+        const onAvailable = () => setCanInstall(true);
+        window.addEventListener('pwa-install-available', onAvailable);
+        if (window.deferredPrompt) setCanInstall(true);
+
+        const onInstalled = () => {
+            setIsInstalled(true);
+            setCanInstall(false);
+            setShowIOSGuide(false);
+        };
+        window.addEventListener('appinstalled', onInstalled);
+
+        return () => {
+            window.removeEventListener('pwa-install-available', onAvailable);
+            window.removeEventListener('appinstalled', onInstalled);
+        };
+    }, []);
+
+    const install = async () => {
+        if (window.installPWA) {
+            const accepted = await window.installPWA();
+            if (accepted) {
+                setCanInstall(false);
+                setIsInstalled(true);
+            }
+        }
+    };
+
+    const dismissIOSGuide = () => setShowIOSGuide(false);
+
+    return { canInstall, isInstalled, showIOSGuide, install, dismissIOSGuide };
+};
+
 // ── Error Boundary para capturar crashes de React ────────
 class ErrorBoundary extends Component {
     constructor(props) {
@@ -69,6 +124,7 @@ const App = () => {
     const [authState, setAuthState] = useState('loading');
     const [session, setSession] = useState(null);
     const [connectionMode, setConnectionMode] = useState('offline');
+    const { canInstall, isInstalled, showIOSGuide, install, dismissIOSGuide } = usePWAInstall();
 
     useEffect(() => {
         checkAuth();
@@ -258,6 +314,34 @@ const App = () => {
                 </nav>
 
                 <div className="sidebar-footer">
+                    {/* Botón instalar para Android/Chrome/Edge */}
+                    {canInstall && !isInstalled && (
+                        <button className="btn-install-pwa" onClick={install}>
+                            <span className="install-icon">📲</span>
+                            Instalar App
+                        </button>
+                    )}
+                    {/* Guía para iOS/Safari */}
+                    {showIOSGuide && !isInstalled && !canInstall && (
+                        <div className="ios-install-guide">
+                            <div className="ios-guide-header">
+                                <span>📲 Instalar en iPhone</span>
+                                <button className="btn-icon" onClick={dismissIOSGuide}>✕</button>
+                            </div>
+                            <p>Toca <strong>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{verticalAlign: 'middle'}}>
+                                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                                    <polyline points="16 6 12 2 8 6"/>
+                                    <line x1="12" y1="2" x2="12" y2="15"/>
+                                </svg> Compartir
+                            </strong> y luego <strong>"Agregar a inicio"</strong></p>
+                        </div>
+                    )}
+                    {isInstalled && (
+                        <div className="pwa-installed-badge">
+                            <span>✅</span> App instalada
+                        </div>
+                    )}
                     <div className="sidebar-connection">
                         <span className={'conn-dot ' + (isOnlineConn ? 'conn-dot-online' : 'conn-dot-offline')}></span>
                         {connLabel}
@@ -300,6 +384,26 @@ const App = () => {
                     </div>
                 </header>
 
+                {/* Mobile PWA install banner */}
+                {!isInstalled && (canInstall || showIOSGuide) && (
+                    <div className="mobile-install-banner">
+                        {canInstall ? (
+                            <button className="btn-install-pwa" onClick={install}>
+                                <span className="install-icon">📲</span>
+                                Instalar CronosApp
+                            </button>
+                        ) : showIOSGuide ? (
+                            <div className="ios-install-guide">
+                                <div className="ios-guide-header">
+                                    <span>📲 Instalar en iPhone</span>
+                                    <button className="btn-icon" onClick={dismissIOSGuide}>✕</button>
+                                </div>
+                                <p>Toca <strong>Compartir ↗</strong> y luego <strong>"Agregar a inicio"</strong></p>
+                            </div>
+                        ) : null}
+                    </div>
+                )}
+
                 <main className="app-main" key={refreshKey}>
                     {ActiveComponent && <ActiveComponent onSuccess={handleSuccess} currentEmployee={currentEmployee} rol={rol} />}
                 </main>
@@ -317,23 +421,6 @@ const App = () => {
 };
 
 async function bootstrap() {
-    // Registrar SW solo en producción; en desarrollo desregistrar para evitar cache
-    if ('serviceWorker' in navigator) {
-        if (process.env.NODE_ENV === 'production') {
-            try {
-                await navigator.serviceWorker.register('/service-worker.js');
-            } catch (err) {
-                console.log('SW no registrado:', err);
-            }
-        } else {
-            // Desregistrar cualquier SW activo en desarrollo
-            const regs = await navigator.serviceWorker.getRegistrations();
-            for (const reg of regs) {
-                await reg.unregister();
-                console.log('SW desregistrado (modo desarrollo)');
-            }
-        }
-    }
     const container = document.getElementById('app');
     const root = createRoot(container);
     root.render(<ErrorBoundary><App /></ErrorBoundary>);

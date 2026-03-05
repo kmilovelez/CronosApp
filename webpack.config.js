@@ -41,6 +41,7 @@ module.exports = (env, argv) => {
             patterns: [
                 { from: 'public/manifest.json', to: 'manifest.json' },
                 { from: 'public/service-worker.js', to: 'service-worker.js' },
+                { from: 'public/icons', to: 'icons' },
             ],
         }),
     ],
