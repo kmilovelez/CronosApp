@@ -138,7 +138,7 @@ const ProjectForm = ({ paises, onCreated }) => {
     return (
         <form onSubmit={handleSubmit} className="bo-project-form">
             <div className="form-row">
-                <input className="input" placeholder="Código (OT-XXXXX)" value={codigo} onChange={(e) => setCodigo(e.target.value)} required />
+                <input className="input" placeholder="Código (TXXXX)" value={codigo} onChange={(e) => setCodigo(e.target.value)} required />
                 <input className="input" placeholder="Nombre del proyecto" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
                 <input className="input" placeholder="Ubicación" value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} />
                 <select className="input" value={pais} onChange={(e) => setPais(e.target.value)}>
