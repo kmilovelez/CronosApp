@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#19191d">
+    <title>CronosApp</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        window.onerror = function(msg, src, line, col, err) {
+            document.getElementById('app').innerHTML =
+                '<div style="padding:32px;font-family:monospace;color:#f87171">' +
+                '<h2>❌ Error al cargar CronosApp</h2>' +
+                '<pre style="white-space:pre-wrap;background:#2a1f1f;padding:16px;border-radius:8px;color:#fca5a5">' +
+                msg + '\n\nArchivo: ' + src + ':' + line + ':' + col +
+                (err && err.stack ? '\n\n' + err.stack : '') +
+                '</pre></div>';
+        };
+        window.addEventListener('unhandledrejection', function(e) {
+            document.getElementById('app').innerHTML =
+                '<div style="padding:32px;font-family:monospace;color:#f87171">' +
+                '<h2>❌ Error (Promise) al cargar CronosApp</h2>' +
+                '<pre style="white-space:pre-wrap;background:#2a1f1f;padding:16px;border-radius:8px;color:#fca5a5">' +
+                (e.reason ? (e.reason.stack || e.reason.message || String(e.reason)) : 'Unknown') +
+                '</pre></div>';
+        });
+    </script>
+</head>
+<body>
+    <div id="app"></div>
+</body>
+</html>

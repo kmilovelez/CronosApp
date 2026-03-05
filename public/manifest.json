@@ -1,0 +1,22 @@
+{
+  "name": "CronosApp — Control de Marcaciones",
+  "short_name": "CronosApp",
+  "description": "Control de marcaciones y asistencia para equipos técnicos multisede. Colombia y México.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#19191d",
+  "theme_color": "#f02e65",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
