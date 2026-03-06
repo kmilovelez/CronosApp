@@ -1,6 +1,6 @@
 // auth-service.js — Servicio de autenticación con Supabase Auth
 import { supabase } from './supabase.js';
-import { getEmployeeByAuthId } from './supabase-db.js';
+import { getEmployeeByAuthId, getEmployeeByCedula, getEmployeeByTelefono } from './supabase-db.js';
 
 // ── Login con email y password ──────────────────────────
 export async function signIn(email, password) {
@@ -10,6 +10,30 @@ export async function signIn(email, password) {
     });
     if (error) throw new Error(error.message);
     return data;
+}
+
+// ── Login inteligente: email, cédula o teléfono + password ──
+export async function signInSmart(identifier, password) {
+    const id = identifier.trim();
+
+    // Si parece email → login directo
+    if (id.includes('@')) {
+        return signIn(id, password);
+    }
+
+    // Buscar por cédula o teléfono → resolver email
+    let emp = await getEmployeeByCedula(id);
+    if (!emp) {
+        // Normalizar teléfono: quitar espacios y guiones
+        const normalizedPhone = id.replace(/[\s\-()]/g, '');
+        emp = await getEmployeeByTelefono(normalizedPhone);
+    }
+
+    if (!emp || !emp.email) {
+        throw new Error('No se encontró un usuario con esa cédula o celular. Verifique el dato ingresado.');
+    }
+
+    return signIn(emp.email, password);
 }
 
 // ── Registro con email y password ───────────────────────

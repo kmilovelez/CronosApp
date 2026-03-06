@@ -79,6 +79,12 @@ export async function getEmployeeByCedula(cedula) {
     return toCamel(throwIfError(res));
 }
 
+export async function getEmployeeByTelefono(telefono) {
+    const res = await supabase.from('employees').select('*').eq('telefono', telefono).single();
+    if (res.error && res.error.code === 'PGRST116') return null;
+    return toCamel(throwIfError(res));
+}
+
 export async function getEmployeeByAuthId(authUserId) {
     const res = await supabase.from('employees').select('*').eq('auth_user_id', authUserId).single();
     if (res.error && res.error.code === 'PGRST116') return null;

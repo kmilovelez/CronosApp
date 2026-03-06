@@ -1,9 +1,10 @@
 // login.js — Componente de Login / Registro para CronosApp
 import React, { useState } from 'react';
-import { signIn, signUp } from '../services/auth-service.js';
+import { signInSmart, signUp } from '../services/auth-service.js';
 
 const Login = ({ onLogin, onSkip }) => {
     const [mode, setMode] = useState('login'); // login | register
+    const [identifier, setIdentifier] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [nombre, setNombre] = useState('');
@@ -20,7 +21,7 @@ const Login = ({ onLogin, onSkip }) => {
 
         try {
             if (mode === 'login') {
-                const data = await signIn(email, password);
+                const data = await signInSmart(identifier, password);
                 onLogin(data.session, data.user);
             } else {
                 const data = await signUp(email, password, {
@@ -90,16 +91,29 @@ const Login = ({ onLogin, onSkip }) => {
                         </>
                     )}
 
-                    <div className="form-group">
-                        <label>Correo electrónico</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="usuario@empresa.com"
-                            required
-                        />
-                    </div>
+                    {mode === 'login' ? (
+                        <div className="form-group">
+                            <label>Correo, cédula o celular</label>
+                            <input
+                                type="text"
+                                value={identifier}
+                                onChange={(e) => setIdentifier(e.target.value)}
+                                placeholder="usuario@empresa.com / 1001234567 / +57 300..."
+                                required
+                            />
+                        </div>
+                    ) : (
+                        <div className="form-group">
+                            <label>Correo electrónico</label>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="usuario@empresa.com"
+                                required
+                            />
+                        </div>
+                    )}
 
                     <div className="form-group">
                         <label>Contraseña</label>
