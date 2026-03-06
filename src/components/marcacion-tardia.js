@@ -9,7 +9,7 @@ import {
     fileToBase64,
     TIPO_ACTIVIDAD_LABELS,
 } from '../utils/helpers.js';
-import { getEmployees, getProjects, addTimeEntry, addAttachment, getTimeEntriesByEmployee } from '../js/db.js';
+import { getEmployees, getProjects, getAllProjects, addTimeEntry, addAttachment, getTimeEntriesByEmployee } from '../js/db.js';
 
 const MOTIVOS_TARDIA = [
     { value: 'olvido', label: 'Olvidó marcar' },
@@ -75,7 +75,7 @@ const CompletarModal = ({ pendiente, projects, onGuardar, onClose }) => {
                 direccion,
                 archivos,
             });
-            onClose();
+            // El cierre del modal lo maneja el componente padre vía onGuardar
         } catch (err) {
             setError('Error: ' + err.message);
         }
@@ -207,7 +207,9 @@ const MarcacionTardia = ({ onSuccess, currentEmployee }) => {
     }, [selectedEmployee]);
 
     const loadData = async () => {
-        const projs = await getProjects();
+        // Cargar TODOS los proyectos (incluyendo inactivos) porque un pendiente
+        // puede pertenecer a una OT ya cerrada/inactiva
+        const projs = await getAllProjects();
         setProjects(projs);
     };
 
@@ -216,35 +218,37 @@ const MarcacionTardia = ({ onSuccess, currentEmployee }) => {
         setLoadingPendientes(true);
         try {
             const entries = await getTimeEntriesByEmployee(employeeId);
-            // Agrupar por fecha + projectId (la OT importa)
-            const porFechaOT = {};
+            // Agrupar por fecha
+            const porFecha = {};
             entries.forEach((e) => {
                 const d = e.date;
-                const pId = e.projectId || e.project_id || 'sin_ot';
-                const key = `${d}__${pId}`;
-                if (!porFechaOT[key]) porFechaOT[key] = { date: d, projectId: pId, entradas: [], salidas: [] };
+                if (!porFecha[d]) porFecha[d] = { entradas: [], salidas: [] };
                 const tipo = e.tipo || e.tipoMarcacion;
-                if (tipo === 'entrada') porFechaOT[key].entradas.push(e);
-                else if (tipo === 'salida') porFechaOT[key].salidas.push(e);
+                if (tipo === 'entrada') porFecha[d].entradas.push(e);
+                else if (tipo === 'salida') porFecha[d].salidas.push(e);
             });
-            // Encontrar días/OT incompletos
+            // Encontrar días incompletos
             const list = [];
-            Object.values(porFechaOT).sort((a, b) => b.date.localeCompare(a.date)).forEach(({ date, projectId, entradas, salidas }) => {
+            Object.keys(porFecha).sort().reverse().forEach((date) => {
+                const { entradas, salidas } = porFecha[date];
                 if (entradas.length > 0 && salidas.length === 0) {
+                    // Tomar la primera entrada como referencia para OT
+                    const ref = entradas[0];
                     list.push({
                         date,
                         tiene: 'entrada',
                         falta: 'salida',
-                        existingEntry: entradas[0],
-                        projectId: entradas[0].projectId || entradas[0].project_id,
+                        existingEntry: ref,
+                        projectId: ref.projectId || ref.project_id || null,
                     });
                 } else if (salidas.length > 0 && entradas.length === 0) {
+                    const ref = salidas[0];
                     list.push({
                         date,
                         tiene: 'salida',
                         falta: 'entrada',
-                        existingEntry: salidas[0],
-                        projectId: salidas[0].projectId || salidas[0].project_id,
+                        existingEntry: ref,
+                        projectId: ref.projectId || ref.project_id || null,
                     });
                 }
             });
@@ -257,7 +261,10 @@ const MarcacionTardia = ({ onSuccess, currentEmployee }) => {
     };
 
     const handleCompletarPendiente = async ({ date, tipo, hora, motivo, descripcion, projectId, existingEntry, gps, direccion, archivos }) => {
-        const proj = projects.find((p) => p.id === Number(projectId || existingEntry?.projectId || existingEntry?.project_id));
+        // Asegurar que projectId sea Number válido
+        const numericProjectId = Number(projectId || existingEntry?.projectId || existingEntry?.project_id) || null;
+        const proj = projects.find((p) => p.id === numericProjectId);
+
         const entry = {
             employeeId: selectedEmployee.id,
             employeeName: selectedEmployee.nombre,
@@ -266,8 +273,9 @@ const MarcacionTardia = ({ onSuccess, currentEmployee }) => {
             tipoMarcacion: tipo,
             horaLocal: getCurrentTimeString(),
             zonaHoraria: getTimezone(),
-            projectId: proj?.id || null,
+            projectId: numericProjectId,
             projectCode: proj?.codigo || existingEntry?.projectCode || existingEntry?.project_code || '',
+            projectName: proj?.nombre || existingEntry?.projectName || existingEntry?.project_name || '',
             tipoActividad: existingEntry?.tipoActividad || existingEntry?.tipo_actividad || 'montaje_sitio',
             esTardia: true,
             horaDeclared: hora,
@@ -277,7 +285,8 @@ const MarcacionTardia = ({ onSuccess, currentEmployee }) => {
             gps: gps || null,
             direccionLegible: direccion || 'Registro completado desde pendientes',
         };
-        const entryId = await addTimeEntry(entry);
+        const savedEntry = await addTimeEntry(entry);
+        const entryId = savedEntry?.id || savedEntry;
 
         // Guardar adjuntos si los hay
         if (archivos && archivos.length > 0) {
@@ -353,7 +362,7 @@ const MarcacionTardia = ({ onSuccess, currentEmployee }) => {
                                     <tbody>
                                         {pendientes.map((p) => (
                                             <PendienteRow
-                                                key={`${p.date}__${p.projectId}`}
+                                                key={p.date}
                                                 pendiente={p}
                                                 projects={projects}
                                                 onCompletarClick={setSelectedPendiente}

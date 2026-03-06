@@ -61,6 +61,9 @@ export function addProject(proj) {
 export function getProjects() {
     return withFallback(() => supa.getProjects(), () => idb_getProjects());
 }
+export function getAllProjects() {
+    return withFallback(() => supa.getAllProjects(), () => idb_getProjects());
+}
 
 // ── TIME ENTRIES ────────────────────────────────────────
 export function addTimeEntry(entry) {
