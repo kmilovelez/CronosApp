@@ -301,7 +301,7 @@ const SupervisorPanel = () => {
                             📅 {group.date} {group.projectCode ? ` — 🔧 ${group.projectCode}` : ''}
                         </span>
                         <span className="entry-meta-sub">
-                            🪪 {emp.cedula || '—'} {emp.pais ? ` · 🌎 ${emp.pais}` : ''}
+                            🪪 {emp.cedula || '—'} {emp.pais ? ` · 🌎 ${emp.pais}` : ''} {emp.telefono ? ` · 📱 ${emp.telefono}` : ''}
                         </span>
                     </div>
                     <div className="entry-header-right">
@@ -321,6 +321,7 @@ const SupervisorPanel = () => {
                         <div className="detail-grid">
                             <div><strong>Cédula:</strong> {emp.cedula || '—'}</div>
                             <div><strong>País:</strong> {emp.pais || '—'}</div>
+                            <div><strong>Teléfono:</strong> {emp.telefono || '—'}</div>
                             <div><strong>OT:</strong> {group.projectCode ? `${group.projectCode} — ${group.projectName}` : '—'}</div>
                             <div><strong>Actividad:</strong> {TIPO_ACTIVIDAD_LABELS[group.tipoActividad] || group.tipoActividad || '—'}</div>
                         </div>

@@ -120,6 +120,7 @@ export async function upsertEmployeeFromAuth(authUser) {
         cedula,
         nombre,
         email,
+        telefono: meta.telefono || null,
         cargo: 'Técnico',
         pais: 'Colombia',
         zona_horaria: 'America/Bogota',

@@ -92,11 +92,12 @@ const EmployeeRow = ({ emp, paises, presence, onRoleChange, onFieldUpdate, onDea
     const [nombre, setNombre] = useState(emp.nombre || '');
     const [cargo, setCargo] = useState(emp.cargo || '');
     const [pais, setPais] = useState(emp.pais || 'Colombia');
+    const [telefono, setTelefono] = useState(emp.telefono || '');
     const [saving, setSaving] = useState(false);
 
     const handleSave = async () => {
         setSaving(true);
-        await onFieldUpdate(emp.id, { nombre, cargo, pais });
+        await onFieldUpdate(emp.id, { nombre, cargo, pais, telefono });
         setSaving(false);
         setEditing(false);
     };
@@ -105,6 +106,7 @@ const EmployeeRow = ({ emp, paises, presence, onRoleChange, onFieldUpdate, onDea
         setNombre(emp.nombre || '');
         setCargo(emp.cargo || '');
         setPais(emp.pais || 'Colombia');
+        setTelefono(emp.telefono || '');
         setEditing(false);
     };
 
@@ -127,6 +129,13 @@ const EmployeeRow = ({ emp, paises, presence, onRoleChange, onFieldUpdate, onDea
             </td>
             <td className="td-mono">{emp.cedula}</td>
             <td className="td-email">{emp.email || '—'}</td>
+            <td>
+                {editing ? (
+                    <input className="input input-sm" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Ej: +57 300 123 4567" />
+                ) : (
+                    emp.telefono || '—'
+                )}
+            </td>
             <td>
                 {editing ? (
                     <input className="input input-sm" value={cargo} onChange={(e) => setCargo(e.target.value)} />
@@ -569,6 +578,7 @@ const BackOffice = () => {
                                     <th>Nombre</th>
                                     <th>Cédula</th>
                                     <th>Email</th>
+                                    <th>Teléfono</th>
                                     <th>Cargo</th>
                                     <th>País</th>
                                     <th>Rol</th>
@@ -579,7 +589,7 @@ const BackOffice = () => {
                             </thead>
                             <tbody>
                                 {filteredEmployees.length === 0 ? (
-                                    <tr><td colSpan={9} className="td-empty">No se encontraron empleados</td></tr>
+                                    <tr><td colSpan={10} className="td-empty">No se encontraron empleados</td></tr>
                                 ) : (
                                     filteredEmployees.map((emp) => (
                                         <EmployeeRow

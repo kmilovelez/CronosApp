@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS public.employees (
     pais        TEXT NOT NULL DEFAULT 'Colombia',
     zona_horaria TEXT DEFAULT 'America/Bogota',
     email       TEXT,
+    telefono    TEXT,
     auth_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     rol         TEXT DEFAULT 'tecnico' CHECK (rol IN ('tecnico', 'supervisor', 'admin')),
     activo      BOOLEAN DEFAULT TRUE,
