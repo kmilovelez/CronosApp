@@ -18,13 +18,11 @@ const MOTIVOS_TARDIA = [
     { value: 'otro', label: 'Otro motivo' },
 ];
 
-/* ─── Componente fila de registro pendiente ─── */
-const PendienteRow = ({ pendiente, projects, onEditar }) => {
-    const [editando, setEditando] = useState(false);
+/* ─── Modal de completar pendiente ─── */
+const CompletarModal = ({ pendiente, projects, onGuardar, onClose }) => {
     const [hora, setHora] = useState('');
     const [motivo, setMotivo] = useState('olvido');
     const [descripcion, setDescripcion] = useState('');
-    const [projectId, setProjectId] = useState(pendiente.projectId || '');
     const [archivos, setArchivos] = useState([]);
     const [gps, setGps] = useState(null);
     const [direccion, setDireccion] = useState('');
@@ -32,12 +30,10 @@ const PendienteRow = ({ pendiente, projects, onEditar }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const faltante = pendiente.falta; // 'entrada' o 'salida'
+    const faltante = pendiente.falta;
 
-    // Nombre del proyecto asignado al registro existente
-    const projExistente = projects.find(
-        (p) => p.id === Number(pendiente.projectId)
-    );
+    // La OT viene del registro existente y NO se puede cambiar (debe ser la misma)
+    const projExistente = projects.find((p) => p.id === Number(pendiente.projectId));
     const otLabel = projExistente
         ? `${projExistente.codigo} — ${projExistente.nombre}`
         : '—';
@@ -67,19 +63,19 @@ const PendienteRow = ({ pendiente, projects, onEditar }) => {
         setError('');
         setLoading(true);
         try {
-            await onEditar({
+            await onGuardar({
                 date: pendiente.date,
                 tipo: faltante,
                 hora,
                 motivo,
                 descripcion,
-                projectId: projectId || pendiente.projectId,
+                projectId: pendiente.projectId, // siempre la misma OT
                 existingEntry: pendiente.existingEntry,
                 gps,
                 direccion,
                 archivos,
             });
-            setEditando(false);
+            onClose();
         } catch (err) {
             setError('Error: ' + err.message);
         }
@@ -87,7 +83,85 @@ const PendienteRow = ({ pendiente, projects, onEditar }) => {
     };
 
     return (
-        <tr className={`pendiente-row ${editando ? 'pendiente-editing' : ''}`}>
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-content pendiente-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                    <h3>✏️ Completar {faltante} — {pendiente.date}</h3>
+                    <button className="btn btn-xs btn-outline" onClick={onClose}>✖</button>
+                </div>
+
+                <div className="pendiente-modal-ot">
+                    <span className="label">Proyecto / OT:</span>
+                    <span className="badge badge-info">{otLabel}</span>
+                </div>
+
+                <div className="pendiente-modal-body">
+                    <div className="form-group">
+                        <label>Hora de {faltante} *</label>
+                        <input type="time" value={hora} onChange={(e) => setHora(e.target.value)} className="input" required />
+                    </div>
+                    <div className="form-group">
+                        <label>Motivo *</label>
+                        <select value={motivo} onChange={(e) => setMotivo(e.target.value)} className="input" required>
+                            {MOTIVOS_TARDIA.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                        </select>
+                    </div>
+                    <div className="form-group">
+                        <label>Descripción / Justificación *</label>
+                        <textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Explique por qué no marcó…" className="input textarea" rows={2} required />
+                    </div>
+
+                    <div className="form-group">
+                        <label>📎 Evidencias (opcional)</label>
+                        <input type="file" multiple onChange={handleFileChange} className="input-file" accept="image/*,.pdf,.doc,.docx" />
+                        {archivos.length > 0 && (
+                            <ul className="file-list">
+                                {archivos.map((f, i) => <li key={i}>📄 {f.name} ({(f.size / 1024).toFixed(0)} KB)</li>)}
+                            </ul>
+                        )}
+                    </div>
+
+                    <div className="form-group">
+                        <label>Ubicación GPS *</label>
+                        <button type="button" className="btn btn-sm btn-outline" onClick={capturarGPS} disabled={gpsLoading}>
+                            {gpsLoading ? '⏳ Obteniendo…' : '📡 Capturar ubicación'}
+                        </button>
+                        {gps && (
+                            <div className="gps-info">
+                                <span>📍 {direccion}</span>
+                                <small>Lat: {gps.lat.toFixed(5)}, Lng: {gps.lng.toFixed(5)} (±{Math.round(gps.precision)}m)</small>
+                            </div>
+                        )}
+                        {!gps && <p className="gps-required-hint">📡 Capture la ubicación para poder guardar</p>}
+                    </div>
+
+                    {error && <div className="alert alert-error">{error}</div>}
+                </div>
+
+                <div className="pendiente-modal-footer">
+                    <button type="button" className="btn btn-primary" onClick={handleGuardar} disabled={loading || !gps}>
+                        {loading ? '⏳…' : '💾 Guardar marcación'}
+                    </button>
+                    <button type="button" className="btn btn-outline" onClick={onClose} disabled={loading}>
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+/* ─── Componente fila de registro pendiente ─── */
+const PendienteRow = ({ pendiente, projects, onCompletarClick }) => {
+    const projExistente = projects.find(
+        (p) => p.id === Number(pendiente.projectId)
+    );
+    const otLabel = projExistente
+        ? `${projExistente.codigo} — ${projExistente.nombre}`
+        : '—';
+
+    return (
+        <tr className="pendiente-row">
             <td>{pendiente.date}</td>
             <td className="td-ot">{otLabel}</td>
             <td>
@@ -95,74 +169,12 @@ const PendienteRow = ({ pendiente, projects, onEditar }) => {
                 {pendiente.tiene === 'salida' && <span className="badge badge-warning">✓ Salida</span>}
             </td>
             <td>
-                <span className="badge badge-error">Falta {faltante}</span>
+                <span className="badge badge-error">Falta {pendiente.falta}</span>
             </td>
             <td>
-                {!editando ? (
-                    <button type="button" className="btn btn-sm btn-outline" onClick={() => setEditando(true)}>
-                        ✏️ Completar
-                    </button>
-                ) : (
-                    <div className="pendiente-edit-form">
-                        <div className="form-group">
-                            <label>Hora de {faltante}</label>
-                            <input type="time" value={hora} onChange={(e) => setHora(e.target.value)} className="input" required />
-                        </div>
-                        <div className="form-group">
-                            <label>Proyecto / OT</label>
-                            <select value={projectId} onChange={(e) => setProjectId(e.target.value)} className="input">
-                                <option value="">— Mismo proyecto —</option>
-                                {projects.map((p) => <option key={p.id} value={p.id}>{p.codigo} — {p.nombre}</option>)}
-                            </select>
-                        </div>
-                        <div className="form-group">
-                            <label>Motivo *</label>
-                            <select value={motivo} onChange={(e) => setMotivo(e.target.value)} className="input" required>
-                                {MOTIVOS_TARDIA.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-                            </select>
-                        </div>
-                        <div className="form-group">
-                            <label>Descripción / Justificación *</label>
-                            <textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Explique por qué no marcó…" className="input textarea" rows={2} required />
-                        </div>
-
-                        {/* Evidencias */}
-                        <div className="form-group">
-                            <label>📎 Evidencias (opcional)</label>
-                            <input type="file" multiple onChange={handleFileChange} className="input-file" accept="image/*,.pdf,.doc,.docx" />
-                            {archivos.length > 0 && (
-                                <ul className="file-list">
-                                    {archivos.map((f, i) => <li key={i}>📄 {f.name} ({(f.size / 1024).toFixed(0)} KB)</li>)}
-                                </ul>
-                            )}
-                        </div>
-
-                        {/* GPS */}
-                        <div className="form-group">
-                            <label>Ubicación GPS *</label>
-                            <button type="button" className="btn btn-sm btn-outline" onClick={capturarGPS} disabled={gpsLoading}>
-                                {gpsLoading ? '⏳ Obteniendo…' : '📡 Capturar ubicación'}
-                            </button>
-                            {gps && (
-                                <div className="gps-info">
-                                    <span>📍 {direccion}</span>
-                                    <small>Lat: {gps.lat.toFixed(5)}, Lng: {gps.lng.toFixed(5)} (±{Math.round(gps.precision)}m)</small>
-                                </div>
-                            )}
-                            {!gps && <p className="gps-required-hint">📡 Capture la ubicación para poder guardar</p>}
-                        </div>
-
-                        {error && <div className="alert alert-error">{error}</div>}
-                        <div className="pendiente-edit-actions">
-                            <button type="button" className="btn btn-sm btn-primary" onClick={handleGuardar} disabled={loading || !gps}>
-                                {loading ? '⏳…' : '💾 Guardar'}
-                            </button>
-                            <button type="button" className="btn btn-sm btn-outline" onClick={() => setEditando(false)} disabled={loading}>
-                                Cancelar
-                            </button>
-                        </div>
-                    </div>
-                )}
+                <button type="button" className="btn btn-sm btn-primary" onClick={() => onCompletarClick(pendiente)}>
+                    ✏️ Completar
+                </button>
             </td>
         </tr>
     );
@@ -173,6 +185,7 @@ const MarcacionTardia = ({ onSuccess, currentEmployee }) => {
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(false);
     const [mensaje, setMensaje] = useState(null);
+    const [selectedPendiente, setSelectedPendiente] = useState(null); // para el modal
 
     const selectedEmployee = currentEmployee || null;
 
@@ -203,19 +216,20 @@ const MarcacionTardia = ({ onSuccess, currentEmployee }) => {
         setLoadingPendientes(true);
         try {
             const entries = await getTimeEntriesByEmployee(employeeId);
-            // Agrupar por fecha
-            const porFecha = {};
+            // Agrupar por fecha + projectId (la OT importa)
+            const porFechaOT = {};
             entries.forEach((e) => {
                 const d = e.date;
-                if (!porFecha[d]) porFecha[d] = { entradas: [], salidas: [] };
+                const pId = e.projectId || e.project_id || 'sin_ot';
+                const key = `${d}__${pId}`;
+                if (!porFechaOT[key]) porFechaOT[key] = { date: d, projectId: pId, entradas: [], salidas: [] };
                 const tipo = e.tipo || e.tipoMarcacion;
-                if (tipo === 'entrada') porFecha[d].entradas.push(e);
-                else if (tipo === 'salida') porFecha[d].salidas.push(e);
+                if (tipo === 'entrada') porFechaOT[key].entradas.push(e);
+                else if (tipo === 'salida') porFechaOT[key].salidas.push(e);
             });
-            // Encontrar días incompletos
+            // Encontrar días/OT incompletos
             const list = [];
-            Object.keys(porFecha).sort().reverse().forEach((date) => {
-                const { entradas, salidas } = porFecha[date];
+            Object.values(porFechaOT).sort((a, b) => b.date.localeCompare(a.date)).forEach(({ date, projectId, entradas, salidas }) => {
                 if (entradas.length > 0 && salidas.length === 0) {
                     list.push({
                         date,
@@ -339,10 +353,10 @@ const MarcacionTardia = ({ onSuccess, currentEmployee }) => {
                                     <tbody>
                                         {pendientes.map((p) => (
                                             <PendienteRow
-                                                key={p.date}
+                                                key={`${p.date}__${p.projectId}`}
                                                 pendiente={p}
                                                 projects={projects}
-                                                onEditar={handleCompletarPendiente}
+                                                onCompletarClick={setSelectedPendiente}
                                             />
                                         ))}
                                     </tbody>
@@ -361,6 +375,18 @@ const MarcacionTardia = ({ onSuccess, currentEmployee }) => {
                         </button>
                     </div>
                 </div>
+            )}
+
+            {selectedPendiente && (
+                <CompletarModal
+                    pendiente={selectedPendiente}
+                    projects={projects}
+                    onGuardar={async (data) => {
+                        await handleCompletarPendiente(data);
+                        setSelectedPendiente(null);
+                    }}
+                    onClose={() => setSelectedPendiente(null)}
+                />
             )}
         </div>
     );

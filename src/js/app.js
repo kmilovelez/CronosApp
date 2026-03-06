@@ -108,7 +108,7 @@ class ErrorBoundary extends Component {
 
 const TABS = [
     { id: 'marcacion', label: 'Marcar', icon: '\u{1F4CD}', component: MarcacionForm, role: 'tecnico' },
-    { id: 'tardia', label: 'Pendientes', icon: '\u{1F4CB}', component: MarcacionTardia, role: 'tecnico' },
+    { id: 'tardia', label: 'Pendientes', icon: '\u{23F3}', component: MarcacionTardia, role: 'tecnico' },
     { id: 'novedades', label: 'Novedades', icon: '\u{1F4CB}', component: NovedadesForm, role: 'tecnico' },
     { id: 'supervisor', label: 'Aprobar', icon: '\u{1F50D}', component: SupervisorPanel, role: 'supervisor' },
     { id: 'nomina', label: 'Nomina', icon: '\u{1F4CA}', component: ReporteNomina, role: 'supervisor' },
