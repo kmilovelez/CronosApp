@@ -117,7 +117,7 @@ const TABS = [
 ];
 
 // ── Modal cambiar contraseña ─────────────────────────────
-const ChangePasswordModal = ({ onClose }) => {
+const ChangePasswordModal = ({ onClose, onLogout }) => {
     const [current, setCurrent] = useState('');
     const [newPwd, setNewPwd] = useState('');
     const [confirm, setConfirm] = useState('');
@@ -141,6 +141,11 @@ const ChangePasswordModal = ({ onClose }) => {
         }
     };
 
+    const handleSuccessClose = () => {
+        onClose();
+        onLogout();
+    };
+
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content change-pwd-modal" onClick={(e) => e.stopPropagation()}>
@@ -150,8 +155,8 @@ const ChangePasswordModal = ({ onClose }) => {
                 </div>
                 {success ? (
                     <div className="modal-body">
-                        <div className="alert alert-success">✅ Contraseña actualizada correctamente.</div>
-                        <button className="btn btn-primary" onClick={onClose} style={{ marginTop: 12, width: '100%' }}>Cerrar</button>
+                        <div className="alert alert-success">✅ Contraseña actualizada. Se cerrará la sesión.</div>
+                        <button className="btn btn-primary" onClick={handleSuccessClose} style={{ marginTop: 12, width: '100%' }}>Aceptar</button>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="modal-body">
@@ -488,7 +493,7 @@ const App = () => {
             </div>
 
             {/* Modal cambiar contraseña */}
-            {showChangePwd && <ChangePasswordModal onClose={() => setShowChangePwd(false)} />}
+            {showChangePwd && <ChangePasswordModal onClose={() => setShowChangePwd(false)} onLogout={handleLogout} />}
         </div>
     );
 };
