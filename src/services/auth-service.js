@@ -68,3 +68,10 @@ export async function resetPassword(email) {
     const { error } = await supabase.auth.resetPasswordForEmail(email);
     if (error) throw new Error(error.message);
 }
+
+// ── Cambiar password (usuario autenticado) ──────────────
+export async function updatePassword(newPassword) {
+    const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw new Error(error.message);
+    return data;
+}

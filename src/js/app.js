@@ -2,7 +2,7 @@ import React, { useState, useEffect, Component } from 'react';
 import { createRoot } from 'react-dom/client';
 import '../css/styles.css';
 import { initDB, seedDemoData, isOnline } from './db.js';
-import { getSession, signOut, onAuthStateChange } from '../services/auth-service.js';
+import { getSession, signOut, onAuthStateChange, updatePassword } from '../services/auth-service.js';
 import { upsertEmployeeFromAuth } from '../services/supabase-db.js';
 import { startPresence, stopPresence } from '../services/presence-service.js';
 import Login from '../components/login.js';
@@ -116,6 +116,66 @@ const TABS = [
     { id: 'admin', label: 'Admin', icon: '\u2699\uFE0F', component: BackOffice, role: 'admin' },
 ];
 
+// ── Modal cambiar contraseña ─────────────────────────────
+const ChangePasswordModal = ({ onClose }) => {
+    const [current, setCurrent] = useState('');
+    const [newPwd, setNewPwd] = useState('');
+    const [confirm, setConfirm] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [success, setSuccess] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError(null);
+        if (newPwd.length < 6) { setError('La nueva contraseña debe tener al menos 6 caracteres.'); return; }
+        if (newPwd !== confirm) { setError('Las contraseñas no coinciden.'); return; }
+        setLoading(true);
+        try {
+            await updatePassword(newPwd);
+            setSuccess(true);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-content change-pwd-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                    <h3>🔑 Cambiar contraseña</h3>
+                    <button className="btn-icon" onClick={onClose}>✕</button>
+                </div>
+                {success ? (
+                    <div className="modal-body">
+                        <div className="alert alert-success">✅ Contraseña actualizada correctamente.</div>
+                        <button className="btn btn-primary" onClick={onClose} style={{ marginTop: 12, width: '100%' }}>Cerrar</button>
+                    </div>
+                ) : (
+                    <form onSubmit={handleSubmit} className="modal-body">
+                        <div className="form-group">
+                            <label>Nueva contraseña</label>
+                            <input type="password" className="input" value={newPwd} onChange={(e) => setNewPwd(e.target.value)}
+                                placeholder="Mínimo 6 caracteres" minLength={6} required autoFocus />
+                        </div>
+                        <div className="form-group">
+                            <label>Confirmar contraseña</label>
+                            <input type="password" className="input" value={confirm} onChange={(e) => setConfirm(e.target.value)}
+                                placeholder="Repita la nueva contraseña" minLength={6} required />
+                        </div>
+                        {error && <div className="alert alert-error">❌ {error}</div>}
+                        <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%', marginTop: 8 }}>
+                            {loading ? '⏳ Actualizando...' : '🔐 Cambiar contraseña'}
+                        </button>
+                    </form>
+                )}
+            </div>
+        </div>
+    );
+};
+
 const App = () => {
     const [activeTab, setActiveTab] = useState('marcacion');
     const [rol, setRol] = useState('tecnico');
@@ -125,6 +185,7 @@ const App = () => {
     const [authState, setAuthState] = useState('loading');
     const [session, setSession] = useState(null);
     const [connectionMode, setConnectionMode] = useState('offline');
+    const [showChangePwd, setShowChangePwd] = useState(false);
     const { canInstall, isInstalled, showIOSGuide, install, dismissIOSGuide } = usePWAInstall();
 
     useEffect(() => {
@@ -360,9 +421,14 @@ const App = () => {
                         </div>
                     </div>
                     {session && (
-                        <button className="btn-logout" onClick={handleLogout}>
-                            Cerrar sesión
-                        </button>
+                        <div className="sidebar-actions">
+                            <button className="btn-change-pwd" onClick={() => setShowChangePwd(true)}>
+                                🔑 Cambiar contraseña
+                            </button>
+                            <button className="btn-logout" onClick={handleLogout}>
+                                Cerrar sesión
+                            </button>
+                        </div>
                     )}
                 </div>
             </aside>
@@ -420,6 +486,9 @@ const App = () => {
                     </p>
                 </footer>
             </div>
+
+            {/* Modal cambiar contraseña */}
+            {showChangePwd && <ChangePasswordModal onClose={() => setShowChangePwd(false)} />}
         </div>
     );
 };
