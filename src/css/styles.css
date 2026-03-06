@@ -520,7 +520,7 @@ select.input {
 
 @media (max-width: 640px) {
     .app-container { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
-    .app-sidebar { position: fixed; bottom: 0; left: 0; right: 0; top: auto; height: auto; flex-direction: row; border-right: none; border-top: 1px solid var(--border); z-index: 100; background: var(--bg-sidebar); padding: 0; }
+    .app-sidebar { position: fixed; bottom: 0; left: 0; right: 0; top: auto; height: auto; flex-direction: row; border-right: none; border-top: 1px solid var(--border); z-index: 100; background: var(--bg-sidebar); padding: 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
     .sidebar-header { display: none; }
     .sidebar-footer { display: none; }
     .sidebar-section-label { display: none; }
@@ -529,7 +529,7 @@ select.input {
     .nav-item { flex-direction: column; padding: 8px 10px; gap: 2px; min-width: 56px; align-items: center; justify-content: center; border-radius: 10px; }
     .nav-item-icon { font-size: 1.1rem; }
     .nav-item-label { font-size: 0.65rem; }
-    .app-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--bg-card); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 90; }
+    .app-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; padding-top: calc(12px + env(safe-area-inset-top, 0px)); background: var(--bg-card); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 90; }
     .header-content h1 { font-size: 1.15rem; }
     .header-content .subtitle { font-size: 0.72rem; color: var(--text-muted); }
     .header-actions { display: flex; align-items: center; gap: 8px; }
@@ -541,6 +541,8 @@ select.input {
     .time-big { font-size: 2rem; }
     .detail-grid { grid-template-columns: 1fr; }
     .filters-bar { flex-direction: column; }
+    .filters-bar .btn { width: 100%; }
+    .filters-bar .form-group { min-width: 100%; }
     .action-buttons { flex-direction: column; }
     .action-buttons .btn { width: 100%; }
     .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -554,6 +556,13 @@ select.input {
     .bo-table { font-size: 0.78rem; }
     .bo-table th, .bo-table td { padding: 6px 8px; }
     .bo-project-form .form-row { flex-direction: column; }
+
+    /* Nómina: filtros y tabla */
+    .nomina-table { font-size: 0.7rem; }
+    .nomina-table th, .nomina-table td { padding: 4px 6px; }
+    .report-table { white-space: normal; }
+    .table-responsive { margin: 8px -16px; padding: 0 16px; }
+    .report-summary { flex-direction: column; gap: 4px; }
 }
 
 /* ─── Modal Completar Pendiente ─── */
