@@ -95,6 +95,12 @@ export function getNovelties() {
 export function getNoveltiesByEmployee(employeeId) {
     return withFallback(() => supa.getNoveltiesByEmployee(employeeId), () => idb_getNoveltiesByEmployee(employeeId));
 }
+export function updateNovelty(nov) {
+    return withFallback(() => supa.updateNovelty(nov), () => idb_updateNovelty(nov));
+}
+export function deleteNovelty(id) {
+    return withFallback(() => supa.deleteNovelty(id), () => idb_deleteNovelty(id));
+}
 
 // ── APPROVALS ───────────────────────────────────────────
 export function addApproval(approval) {
@@ -245,6 +251,8 @@ function idb_updateTimeEntry(entry) { return promisifyRequest(getStore('timeEntr
 function idb_addNovelty(n) { return promisifyRequest(getStore('novelties', 'readwrite').add(n)); }
 function idb_getNovelties() { return promisifyRequest(getStore('novelties').getAll()); }
 function idb_getNoveltiesByEmployee(eid) { return promisifyRequest(getStore('novelties').index('employeeId').getAll(eid)); }
+function idb_updateNovelty(n) { return promisifyRequest(getStore('novelties', 'readwrite').put(n)); }
+function idb_deleteNovelty(id) { return promisifyRequest(getStore('novelties', 'readwrite').delete(id)); }
 
 // IDB: Approvals
 function idb_addApproval(a) { return promisifyRequest(getStore('approvals', 'readwrite').add({ ...a, timestamp: Date.now() })); }

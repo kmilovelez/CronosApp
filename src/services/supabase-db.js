@@ -336,6 +336,20 @@ export async function getNoveltiesByEmployee(employeeId) {
     return toCamelArray(throwIfError(res));
 }
 
+export async function updateNovelty(nov) {
+    const id = nov.id;
+    const row = toSnake(nov);
+    delete row.id;
+    const res = await supabase.from('novelties').update(row).eq('id', id).select().single();
+    return toCamel(throwIfError(res));
+}
+
+export async function deleteNovelty(id) {
+    const res = await supabase.from('novelties').delete().eq('id', id);
+    throwIfError(res);
+    return true;
+}
+
 // ── APPROVALS ───────────────────────────────────────────
 export async function addApproval(approval) {
     const row = toSnake({
