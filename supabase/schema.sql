@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS public.time_entries (
     project_id          BIGINT REFERENCES public.projects(id) ON DELETE SET NULL,
     project_code        TEXT,
     project_name        TEXT,
-    tipo_actividad      TEXT CHECK (tipo_actividad IN ('montaje_sitio', 'remoto', 'viaje', 'planta')),
+    tipo_actividad      TEXT CHECK (tipo_actividad IN ('montaje_sitio', 'remoto', 'viaje', 'planta')),  -- remoto y viaje son legacy, nuevas marcaciones solo usan montaje_sitio y planta
     es_tardia           BOOLEAN DEFAULT FALSE,
     fecha_declarada     TEXT,
     hora_declarada      TEXT,
@@ -79,13 +79,16 @@ CREATE TABLE IF NOT EXISTS public.novelties (
     id              BIGSERIAL PRIMARY KEY,
     employee_id     BIGINT REFERENCES public.employees(id) ON DELETE CASCADE,
     employee_name   TEXT,
-    tipo            TEXT NOT NULL CHECK (tipo IN ('incapacidad', 'vacaciones', 'calamidad', 'compensatorio', 'permiso_remunerado', 'cita_medica')),
+    tipo            TEXT NOT NULL CHECK (tipo IN ('incapacidad', 'vacaciones', 'calamidad', 'compensatorio', 'permiso_remunerado', 'permiso_no_remunerado', 'cita_medica', 'capacitacion', 'entrenamiento', 'viaje_vuelo', 'licencia_paternidad', 'licencia_luto')),
     date            DATE NOT NULL,
     fecha_inicio    DATE,
     fecha_fin       DATE,
     hora_inicio     TEXT,
     hora_fin        TEXT,
     descripcion     TEXT,
+    gps_lat         NUMERIC(10,7),
+    gps_lng         NUMERIC(10,7),
+    gps_address     TEXT,
     attachment_ids  BIGINT[] DEFAULT '{}',
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );

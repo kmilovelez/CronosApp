@@ -172,8 +172,6 @@ export function debounce(func, delay) {
 // Labels legibles
 export const TIPO_ACTIVIDAD_LABELS = {
     montaje_sitio: 'Montaje en sitio',
-    remoto: 'Trabajo remoto',
-    viaje: 'Viaje / Vuelo',
     planta: 'Trabajo en planta',
 };
 
@@ -183,7 +181,13 @@ export const TIPO_NOVEDAD_LABELS = {
     calamidad: 'Calamidad doméstica',
     compensatorio: 'Compensatorio',
     permiso_remunerado: 'Permiso remunerado',
+    permiso_no_remunerado: 'Permiso no remunerado',
     cita_medica: 'Cita médica',
+    capacitacion: 'Capacitación',
+    entrenamiento: 'Entrenamiento',
+    viaje_vuelo: 'Viaje / Vuelo',
+    licencia_paternidad: 'Licencia de paternidad',
+    licencia_luto: 'Licencia por luto',
 };
 
 export const STATUS_LABELS = {

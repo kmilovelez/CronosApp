@@ -103,7 +103,7 @@ const MarcacionForm = ({ onSuccess, currentEmployee }) => {
             projectCode: proj?.codigo || '',
             tipoActividad,
             esTardia: false,
-            esViaje: tipoActividad === 'viaje',
+            esViaje: false,
             gps: gps || null,
             direccionLegible: direccion || 'No capturada',
             observaciones,
