@@ -322,6 +322,8 @@ export async function updateTimeEntry(entry) {
 export async function addNovelty(nov) {
     const row = toSnake(nov);
     delete row.id;
+    delete row.cedula;
+    delete row.project_code;
     const res = await supabase.from('novelties').insert(row).select().single();
     return toCamel(throwIfError(res));
 }
@@ -340,6 +342,8 @@ export async function updateNovelty(nov) {
     const id = nov.id;
     const row = toSnake(nov);
     delete row.id;
+    delete row.cedula;
+    delete row.project_code;
     const res = await supabase.from('novelties').update(row).eq('id', id).select().single();
     return toCamel(throwIfError(res));
 }
