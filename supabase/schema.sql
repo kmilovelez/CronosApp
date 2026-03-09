@@ -86,12 +86,13 @@ CREATE TABLE IF NOT EXISTS public.novelties (
     hora_inicio     TEXT,
     hora_fin        TEXT,
     descripcion     TEXT,
-    gps_lat         NUMERIC(10,7),
-    gps_lng         NUMERIC(10,7),
-    gps_address     TEXT,
+    project_code    TEXT,
     attachment_ids  BIGINT[] DEFAULT '{}',
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migración: agregar project_code si la tabla ya existe
+ALTER TABLE public.novelties ADD COLUMN IF NOT EXISTS project_code TEXT DEFAULT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_nov_employee ON public.novelties(employee_id);
 CREATE INDEX IF NOT EXISTS idx_nov_date ON public.novelties(date);
