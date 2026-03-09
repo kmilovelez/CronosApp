@@ -147,10 +147,10 @@ const NovedadModal = ({ isOpen, onClose, onSaved, editData, currentEmployee, emp
                 const base64 = await fileToBase64(file);
                 await addAttachment({
                     referenceId: novId,
-                    type: tipo,
+                    referenceType: tipo,
                     fileName: file.name,
-                    mimeType: file.type,
-                    dataBase64: base64,
+                    fileType: file.type,
+                    base64Data: base64,
                 });
             }
 

@@ -328,54 +328,86 @@ function pickNoveltyCols(row) {
     return clean;
 }
 
-// ── Serializar project_code dentro de descripcion ───────
-// Formato: "[OT:CÓDIGO] texto libre"
-// Mientras la columna project_code no exista en la tabla,
-// lo guardamos como prefijo y lo extraemos al leer.
-const OT_RE = /^\[OT:([^\]]*)\]\s*/;
+// ── Serializar metadata en descripcion ──────────────────
+// Mientras falten columnas (project_code) o el CHECK constraint
+// no acepte todos los tipos, guardamos metadata como prefijos:
+//   [OT:código]         → project_code
+//   [TIPO:tipo_real]    → tipo extendido (cuando no lo acepta el CHECK)
+// Al leer, se extraen de vuelta de forma transparente.
 
-function packOT(row) {
+const META_RE = /^\[([A-Z]+):([^\]]*)\]\s*/g;
+
+// Tipos que el CHECK constraint REAL acepta actualmente
+const DB_VALID_TIPOS = new Set([
+    'incapacidad','vacaciones','calamidad','compensatorio',
+    'permiso_remunerado','cita_medica',
+]);
+
+// Mapeo: tipo extendido → tipo base válido en la BD
+const TIPO_FALLBACK = 'cita_medica';
+
+function packNovelty(row) {
+    let prefix = '';
+
+    // 1) project_code → [OT:xxx]
     const code = row.project_code || '';
     delete row.project_code;
-    if (code) {
-        row.descripcion = `[OT:${code}] ${row.descripcion || ''}`;
+    if (code) prefix += `[OT:${code}] `;
+
+    // 2) tipo extendido → [TIPO:xxx] + reemplazar por tipo base
+    if (row.tipo && !DB_VALID_TIPOS.has(row.tipo)) {
+        prefix += `[TIPO:${row.tipo}] `;
+        row.tipo = TIPO_FALLBACK;
+    }
+
+    if (prefix) {
+        row.descripcion = prefix + (row.descripcion || '');
     }
     return row;
 }
 
-function unpackOT(row) {
+function unpackNovelty(row) {
     if (!row) return row;
-    const m = (row.descripcion || '').match(OT_RE);
-    if (m) {
-        row.projectCode = m[1];
-        row.descripcion = row.descripcion.replace(OT_RE, '');
-    } else {
-        row.projectCode = row.project_code || '';
+    let desc = row.descripcion || '';
+    let projectCode = '';
+    let realTipo = null;
+
+    // Extraer prefijos [KEY:value] uno a uno desde el inicio
+    const PREFIX_RE = /^\[([A-Z_]+):([^\]]*)\]\s*/;
+    let m;
+    while ((m = PREFIX_RE.exec(desc)) !== null) {
+        if (m[1] === 'OT') projectCode = m[2];
+        if (m[1] === 'TIPO') realTipo = m[2];
+        desc = desc.slice(m[0].length);          // recortar prefijo ya procesado
     }
+
+    row.descripcion = desc;
+    row.projectCode = projectCode || row.project_code || '';
+    if (realTipo) row.tipo = realTipo;
     return row;
 }
 
 export async function addNovelty(nov) {
-    const row = pickNoveltyCols(packOT(toSnake(nov)));
+    const row = pickNoveltyCols(packNovelty(toSnake(nov)));
     const res = await supabase.from('novelties').insert(row).select().single();
-    return unpackOT(toCamel(throwIfError(res)));
+    return unpackNovelty(toCamel(throwIfError(res)));
 }
 
 export async function getNovelties() {
     const res = await supabase.from('novelties').select('*').order('created_at', { ascending: false });
-    return throwIfError(res).map(r => unpackOT(toCamel(r)));
+    return throwIfError(res).map(r => unpackNovelty(toCamel(r)));
 }
 
 export async function getNoveltiesByEmployee(employeeId) {
     const res = await supabase.from('novelties').select('*').eq('employee_id', employeeId).order('date', { ascending: false });
-    return throwIfError(res).map(r => unpackOT(toCamel(r)));
+    return throwIfError(res).map(r => unpackNovelty(toCamel(r)));
 }
 
 export async function updateNovelty(nov) {
     const id = nov.id;
-    const row = pickNoveltyCols(packOT(toSnake(nov)));
+    const row = pickNoveltyCols(packNovelty(toSnake(nov)));
     const res = await supabase.from('novelties').update(row).eq('id', id).select().single();
-    return unpackOT(toCamel(throwIfError(res)));
+    return unpackNovelty(toCamel(throwIfError(res)));
 }
 
 export async function deleteNovelty(id) {

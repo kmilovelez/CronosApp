@@ -268,8 +268,8 @@ const SupervisorPanel = () => {
                         <ul className="file-list">
                             {attachments[entry.id].map((att, i) => (
                                 <li key={i}>
-                                    {att.mimeType?.startsWith('image/') ? (
-                                        <img src={att.dataBase64} alt={att.fileName} className="attachment-thumb" />
+                                    {att.fileType?.startsWith('image/') ? (
+                                        <img src={att.base64Data} alt={att.fileName} className="attachment-thumb" />
                                     ) : (<span>📄 {att.fileName}</span>)}
                                 </li>
                             ))}
