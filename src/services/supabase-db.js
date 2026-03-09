@@ -319,11 +319,16 @@ export async function updateTimeEntry(entry) {
 }
 
 // ── NOVELTIES (Novedades) ───────────────────────────────
+// Columnas válidas en tabla novelties (excluye id y created_at auto-generados)
+const NOVELTY_COLS = ['employee_id','employee_name','tipo','date','fecha_inicio','fecha_fin','hora_inicio','hora_fin','descripcion','gps_lat','gps_lng','attachment_ids'];
+function pickNoveltyCols(row) {
+    const clean = {};
+    for (const col of NOVELTY_COLS) { if (row[col] !== undefined) clean[col] = row[col]; }
+    return clean;
+}
+
 export async function addNovelty(nov) {
-    const row = toSnake(nov);
-    delete row.id;
-    delete row.cedula;
-    delete row.project_code;
+    const row = pickNoveltyCols(toSnake(nov));
     const res = await supabase.from('novelties').insert(row).select().single();
     return toCamel(throwIfError(res));
 }
@@ -340,10 +345,7 @@ export async function getNoveltiesByEmployee(employeeId) {
 
 export async function updateNovelty(nov) {
     const id = nov.id;
-    const row = toSnake(nov);
-    delete row.id;
-    delete row.cedula;
-    delete row.project_code;
+    const row = pickNoveltyCols(toSnake(nov));
     const res = await supabase.from('novelties').update(row).eq('id', id).select().single();
     return toCamel(throwIfError(res));
 }
