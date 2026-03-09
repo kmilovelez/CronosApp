@@ -320,7 +320,6 @@ export async function updateTimeEntry(entry) {
 
 // ── NOVELTIES (Novedades) ───────────────────────────────
 // Columnas válidas en tabla novelties (excluye id y created_at auto-generados)
-// NOTA: project_code se añadirá cuando exista en Supabase (ALTER TABLE)
 const NOVELTY_COLS = ['employee_id','employee_name','tipo','date','fecha_inicio','fecha_fin','hora_inicio','hora_fin','descripcion','attachment_ids'];
 
 function pickNoveltyCols(row) {
@@ -329,27 +328,54 @@ function pickNoveltyCols(row) {
     return clean;
 }
 
+// ── Serializar project_code dentro de descripcion ───────
+// Formato: "[OT:CÓDIGO] texto libre"
+// Mientras la columna project_code no exista en la tabla,
+// lo guardamos como prefijo y lo extraemos al leer.
+const OT_RE = /^\[OT:([^\]]*)\]\s*/;
+
+function packOT(row) {
+    const code = row.project_code || '';
+    delete row.project_code;
+    if (code) {
+        row.descripcion = `[OT:${code}] ${row.descripcion || ''}`;
+    }
+    return row;
+}
+
+function unpackOT(row) {
+    if (!row) return row;
+    const m = (row.descripcion || '').match(OT_RE);
+    if (m) {
+        row.projectCode = m[1];
+        row.descripcion = row.descripcion.replace(OT_RE, '');
+    } else {
+        row.projectCode = row.project_code || '';
+    }
+    return row;
+}
+
 export async function addNovelty(nov) {
-    const row = pickNoveltyCols(toSnake(nov));
+    const row = packOT(pickNoveltyCols(toSnake(nov)));
     const res = await supabase.from('novelties').insert(row).select().single();
-    return toCamel(throwIfError(res));
+    return unpackOT(toCamel(throwIfError(res)));
 }
 
 export async function getNovelties() {
     const res = await supabase.from('novelties').select('*').order('created_at', { ascending: false });
-    return toCamelArray(throwIfError(res));
+    return throwIfError(res).map(r => unpackOT(toCamel(r)));
 }
 
 export async function getNoveltiesByEmployee(employeeId) {
     const res = await supabase.from('novelties').select('*').eq('employee_id', employeeId).order('date', { ascending: false });
-    return toCamelArray(throwIfError(res));
+    return throwIfError(res).map(r => unpackOT(toCamel(r)));
 }
 
 export async function updateNovelty(nov) {
     const id = nov.id;
-    const row = pickNoveltyCols(toSnake(nov));
+    const row = packOT(pickNoveltyCols(toSnake(nov)));
     const res = await supabase.from('novelties').update(row).eq('id', id).select().single();
-    return toCamel(throwIfError(res));
+    return unpackOT(toCamel(throwIfError(res)));
 }
 
 export async function deleteNovelty(id) {
