@@ -319,18 +319,45 @@ export async function updateTimeEntry(entry) {
 }
 
 // ── NOVELTIES (Novedades) ───────────────────────────────
-// Columnas válidas en tabla novelties (excluye id y created_at auto-generados)
-const NOVELTY_COLS = ['employee_id','employee_name','tipo','date','fecha_inicio','fecha_fin','hora_inicio','hora_fin','descripcion','attachment_ids','project_code'];
-function pickNoveltyCols(row) {
+// Columnas base (siempre existen) y opcionales (pueden no existir aún en la DB)
+const NOVELTY_BASE_COLS = ['employee_id','employee_name','tipo','date','fecha_inicio','fecha_fin','hora_inicio','hora_fin','descripcion','attachment_ids'];
+const NOVELTY_OPT_COLS  = ['project_code'];  // Se agregarán cuando la columna exista en Supabase
+
+// Cache: una vez detectamos que la columna existe, la recordamos para la sesión
+let _optColsAvailable = null;
+
+function pickNoveltyCols(row, includedOpt = NOVELTY_OPT_COLS) {
+    const cols = [...NOVELTY_BASE_COLS, ...includedOpt];
     const clean = {};
-    for (const col of NOVELTY_COLS) { if (row[col] !== undefined) clean[col] = row[col]; }
+    for (const col of cols) { if (row[col] !== undefined) clean[col] = row[col]; }
     return clean;
 }
 
+// Intenta una operación; si falla por columna faltante, reintenta sin columnas opcionales
+async function noveltyUpsert(operation) {
+    // Si ya sabemos que las opcionales no existen, saltarlas directamente
+    if (_optColsAvailable === false) return operation(false);
+    try {
+        const result = await operation(true);
+        _optColsAvailable = true;  // funcionó → la columna existe
+        return result;
+    } catch (err) {
+        if (err.message && err.message.includes('project_code')) {
+            console.warn('Columna project_code no existe aún, reintentando sin ella');
+            _optColsAvailable = false;
+            return operation(false);
+        }
+        throw err;
+    }
+}
+
 export async function addNovelty(nov) {
-    const row = pickNoveltyCols(toSnake(nov));
-    const res = await supabase.from('novelties').insert(row).select().single();
-    return toCamel(throwIfError(res));
+    const snaked = toSnake(nov);
+    return noveltyUpsert(async (withOpt) => {
+        const row = pickNoveltyCols(snaked, withOpt ? NOVELTY_OPT_COLS : []);
+        const res = await supabase.from('novelties').insert(row).select().single();
+        return toCamel(throwIfError(res));
+    });
 }
 
 export async function getNovelties() {
@@ -345,9 +372,12 @@ export async function getNoveltiesByEmployee(employeeId) {
 
 export async function updateNovelty(nov) {
     const id = nov.id;
-    const row = pickNoveltyCols(toSnake(nov));
-    const res = await supabase.from('novelties').update(row).eq('id', id).select().single();
-    return toCamel(throwIfError(res));
+    const snaked = toSnake(nov);
+    return noveltyUpsert(async (withOpt) => {
+        const row = pickNoveltyCols(snaked, withOpt ? NOVELTY_OPT_COLS : []);
+        const res = await supabase.from('novelties').update(row).eq('id', id).select().single();
+        return toCamel(throwIfError(res));
+    });
 }
 
 export async function deleteNovelty(id) {
