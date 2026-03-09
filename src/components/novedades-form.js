@@ -424,7 +424,7 @@ const NovedadesForm = ({ onSuccess, currentEmployee }) => {
                 </div>
             ) : (
                 <div className="table-responsive">
-                    <table className="table">
+                    <table className="report-table">
                         <thead>
                             <tr>
                                 <th>Fecha</th>
