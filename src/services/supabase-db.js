@@ -320,7 +320,7 @@ export async function updateTimeEntry(entry) {
 
 // ── NOVELTIES (Novedades) ───────────────────────────────
 // Columnas válidas en tabla novelties (excluye id y created_at auto-generados)
-const NOVELTY_COLS = ['employee_id','employee_name','tipo','date','fecha_inicio','fecha_fin','hora_inicio','hora_fin','descripcion','gps_lat','gps_lng','attachment_ids'];
+const NOVELTY_COLS = ['employee_id','employee_name','tipo','date','fecha_inicio','fecha_fin','hora_inicio','hora_fin','descripcion','attachment_ids'];
 function pickNoveltyCols(row) {
     const clean = {};
     for (const col of NOVELTY_COLS) { if (row[col] !== undefined) clean[col] = row[col]; }
