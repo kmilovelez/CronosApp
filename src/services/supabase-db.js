@@ -356,7 +356,7 @@ function unpackOT(row) {
 }
 
 export async function addNovelty(nov) {
-    const row = packOT(pickNoveltyCols(toSnake(nov)));
+    const row = pickNoveltyCols(packOT(toSnake(nov)));
     const res = await supabase.from('novelties').insert(row).select().single();
     return unpackOT(toCamel(throwIfError(res)));
 }
@@ -373,7 +373,7 @@ export async function getNoveltiesByEmployee(employeeId) {
 
 export async function updateNovelty(nov) {
     const id = nov.id;
-    const row = packOT(pickNoveltyCols(toSnake(nov)));
+    const row = pickNoveltyCols(packOT(toSnake(nov)));
     const res = await supabase.from('novelties').update(row).eq('id', id).select().single();
     return unpackOT(toCamel(throwIfError(res)));
 }
